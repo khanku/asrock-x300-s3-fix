@@ -7,7 +7,6 @@ about this.
 
 - A Cezanne-based APU (Ryzen 5X00G) (unless you want to be a guinea pig)
 - A Linux-based operating system
-- nix installed (note NixOS is not necessary)
 - Latest firmware at the time of writing (1.70)
 
 ## :warning: WARNINGS
@@ -35,9 +34,15 @@ sudo cp /sys/firmware/acpi/tables/DSDT dsdt.aml
 ./mkoverride.sh
 ```
 
-After that you'll have a file named `acpi_dsdt_override.cpio` in the repository root. Prepending
-this file to your initramfs is distro-specific, on NixOS the
-`boot.initrd.prepend = [ "${./acpi_dsdt_override.cpio}" ];` option does the job, on
-Debian/Ubuntu-based distros `prepend_earlyinitramfs` in a initramfs-tools hook can be used, see
-[this file](https://github.com/naftulikay/thinkpad-yoga-3rd-gen-acpi/blob/88f47bf0922bcbb85e946fabcb8fb86cdcf40b51/etc/initramfs-tools/hooks/acpi-override)
-for reference.
+After that you'll have a file named `acpi_dsdt_override.cpio` in the repository root. It needs
+to be loaded before your initramfs, which can be done with grub2.
+
+## Gentoo notes
+
+- copy `iasl/iasl-accept-duplicates.patch` to e.g. `/etc/portage/patches/sys-power/iasl-20200717/` before merging `sys-power/iasl`
+- run `bash -xe ./mkoverride.sh`
+
+and then
+- either use your kernel's `gen_init_cpio` (e.g. `/usr/src/linux-6.0.0-gentoo/usr/gen_init_cpio override_cpio_spec >acpi_dsdt_override.cpio`)
+- or `mkdir -p overlay/kernel/firmware/acpi/; cp dsdt.aml !$` and use `genkernel --initramfs-overlay=path/to/overlay [...]`
+  this requires CONFIG_ACPI_TABLE_UPGRADE=y, CONFIG_ACPI_TABLE_OVERRIDE_VIA_BUILTIN_INITRD=y and CONFIG_INITRAMFS_COMPRESSION_NONE=y
